@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BCS Primary Club Finder · 2026–27</title>
+<meta name="description" content="Filterable directory of Berlin Cosmopolitan School primary extracurricular clubs, 2026–27." />
+<style>
+  html, body { margin: 0; padding: 0; background: #EAEEE8; }
+  #root { min-height: 100vh; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" crossorigin></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+/* ---------------------------------------------------------------
+   BCS Primary Clubs 2026–27 — filterable directory
+   Data merged from the Club Handbook (descriptions) and the
+   Primary Club Schedule (days, times, grade ranges).
+----------------------------------------------------------------*/
+
+const C = {
+  paper: "#EAEEE8",
+  card: "#FFFFFF",
+  ink: "#14231D",
+  soft: "#5F7068",
+  line: "#CBD5CB",
+  pine: "#1F6F5C",
+  marigold: "#E0A11B",
+  rose: "#B24C63",
+};
+
+const CAT_COLOR = {
+  Dance: "#B24C63",
+  Music: "#5B5BA6",
+  Sport: "#1F6F5C",
+  "Art & making": "#C2703D",
+  Languages: "#2A7FA8",
+  STEM: "#3F7D3F",
+  "Games & social": "#8A6A2F",
+};
+
+// day, start (sortable), time label, band, name, grade low/high, category, description, note
+const CLUBS = [
+  // ---------- MONDAY ----------
+  ["Mon", 800, "08:00–08:45", "Morning", "Double Deutsch · Beginner", 2, 6, "Languages", "German language support before school.", "Also Wed & Fri"],
+  ["Mon", 800, "08:00–08:45", "Morning", "Tap Dance 1 · Beginners", 2, 3, "Dance", "Rhythmic footwork develops balance, coordination and musicality."],
+  ["Mon", 800, "08:00–08:45", "Morning", "BCS Symphonia", 6, 12, "Music", "A string ensemble for developing musicians, with regular rehearsal and performance opportunities."],
+  ["Mon", 800, "08:00–08:45", "Morning", "Concert Band", 6, 8, "Music", "Wind and brass players explore varied repertoire and develop ensemble skills."],
+  ["Mon", 800, "08:00–08:45", "Morning", "Beginning Guitar", 6, 7, "Music", "A supported introduction to guitar technique and ensemble playing."],
+  ["Mon", 0, "By arrangement", "Flexible", "Double Deutsch · Dyslexia edition", 2, 6, "Languages", "Individual German support.", "Mon or Thu · Ms Avguston contacts families"],
+  ["Mon", 1515, "15:15–16:15", "Early", "English Story Time", 1, 2, "Languages", "Stories, conversation and creative follow-up activities build confidence and enjoyment in English."],
+  ["Mon", 1515, "15:15–16:15", "Early", "Basketball", 1, 2, "Sport", "Age-appropriate skill development through dribbling, passing, shooting and team play."],
+  ["Mon", 1515, "15:15–16:15", "Early", "Cooking", 1, 2, "Art & making", "Children discover ingredients and food traditions while learning safe, cooperative cooking and baking."],
+  ["Mon", 1515, "15:15–16:15", "Early", "Ballet 2", 2, 3, "Dance", "Classical dance develops technique, posture, musicality and confident performance."],
+  ["Mon", 1515, "15:15–16:15", "Early", "Parkour Club", 3, 5, "Sport", "Safe movement challenges develop agility, confidence and spatial awareness."],
+  ["Mon", 1515, "15:15–17:15", "Early", "Stop Motion Animation Movie Club", 3, 5, "Art & making", "Small groups create characters and stories, photograph each frame and animate their ideas.", "Two hours"],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Card Game Club", 1, 2, "Games & social", "A friendly strategy Club in which cards are played, not traded, loaned or sold."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Japanese Primary", 3, 6, "Languages", "An introduction to Japanese language and culture through writing, food, film and creative activities."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Werewolf Club", 3, 6, "Games & social", "A social deduction game that develops reasoning, communication and group awareness."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Creative Movie Maker", 3, 6, "Art & making", "Children work in front of and behind the camera to produce short films."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Primary Science Club", 3, 6, "STEM", "Hands-on experiments encourage curiosity, questioning, teamwork and scientific thinking."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Coding Club", 4, 6, "STEM", "Creative coding tasks develop computational thinking, problem-solving and confidence with digital tools."],
+  ["Mon", 1615, "16:15–17:15", "Mid", "Volleyball Club", 6, 6, "Sport", "Serving, passing, setting and team play in an inclusive sporting environment."],
+  ["Mon", 1715, "17:15–18:15", "Late", "Ballet 4 · JPC", 6, 6, "Dance", "Advanced ballet and Junior Performance Class work.", "By arrangement or invitation"],
+
+  // ---------- TUESDAY ----------
+  ["Tue", 800, "08:00–08:45", "Morning", "Double Deutsch · Level 2", 2, 6, "Languages", "German language support before school.", "Also Thu"],
+  ["Tue", 800, "08:00–08:45", "Morning", "Orchestra Arco", 3, 6, "Music", "An ensemble opportunity for children developing on a string instrument."],
+  ["Tue", 800, "08:00–08:45", "Morning", "Music Theory Tutorial", 6, 10, "Music", "A focused tutorial in notation, rhythm, harmony and musical structure."],
+  ["Tue", 1515, "15:15–16:15", "Early", "Ballet 1", 1, 1, "Dance", "Age-appropriate classical dance develops technique, posture and musicality."],
+  ["Tue", 1515, "15:15–16:15", "Early", "Canta Cosmo", 1, 4, "Music", "A multilingual primary choir preparing songs in a range of styles."],
+  ["Tue", 1515, "15:15–16:15", "Early", "Clay Modelling and Ceramics", 1, 2, "Art & making", "Children explore materials, tools and techniques through their own clay and ceramic projects."],
+  ["Tue", 1515, "15:15–16:15", "Early", "Card Game Club", 2, 4, "Games & social", "A friendly strategy Club in which cards are played, not traded, loaned or sold."],
+  ["Tue", 1515, "15:15–16:15", "Early", "Cooking", 3, 4, "Art & making", "Children discover ingredients and food traditions while learning safe, cooperative cooking and baking."],
+  ["Tue", 1615, "16:15–17:15", "Mid", "Clay Modelling and Ceramics", 3, 6, "Art & making", "Children explore materials, tools and techniques through their own clay and ceramic projects."],
+  ["Tue", 1615, "16:15–17:15", "Mid", "Card Game Club", 4, 6, "Games & social", "A friendly strategy Club in which cards are played, not traded, loaned or sold."],
+  ["Tue", 1715, "17:15–18:15", "Late", "Hip Hop & Street Dance", 5, 6, "Dance", "Urban dance styles develop rhythm, coordination, expression and group performance."],
+  ["Tue", 1715, "17:15–18:15", "Late", "Clay Modelling Club", 5, 6, "Art & making", "Children explore clay techniques and develop their own three-dimensional projects."],
+
+  // ---------- WEDNESDAY ----------
+  ["Wed", 800, "08:00–08:45", "Morning", "Double Deutsch · Beginner", 2, 6, "Languages", "German language support before school.", "Also Mon & Fri"],
+  ["Wed", 800, "08:00–08:45", "Morning", "Tap Dance 2", 4, 6, "Dance", "Rhythmic footwork develops balance, coordination and musicality."],
+  ["Wed", 800, "08:00–08:45", "Morning", "Beginning Brass / Winds", 5, 6, "Music", "An introductory ensemble for children beginning brass or wind instruments."],
+  ["Wed", 1515, "15:15–16:15", "Early", "Soccer Club", 1, 3, "Sport", "Training and games develop technique, fitness, teamwork and fair play."],
+  ["Wed", 1515, "15:15–16:15", "Early", "French Primary", 1, 5, "Languages", "French vocabulary and sentence-building through games, stories, songs and cultural activities."],
+  ["Wed", 1515, "15:15–16:15", "Early", "Primary Science Club", 3, 5, "STEM", "Hands-on experiments encourage curiosity, questioning, teamwork and scientific thinking."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "Yoga and Costume Design", 1, 2, "Art & making", "Child-friendly yoga and creative costume design connect movement, breathing and imagination."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "Clay Modelling", 3, 6, "Art & making", "Children explore clay techniques and develop their own projects."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "Soccer Club", 4, 6, "Sport", "Training and games develop technique, fitness, teamwork and fair play."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "VEX IQ Mix", 4, 6, "STEM", "Hands-on robotics challenges combine designing, building, coding and collaborative problem-solving."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "VEX for Girls", 4, 6, "STEM", "A supportive robotics Club for girls, focused on designing, building, coding and teamwork."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "Cooking", 6, 8, "Art & making", "Children discover ingredients and food traditions while learning safe, cooperative cooking and baking."],
+  ["Wed", 1615, "16:15–17:15", "Mid", "French", 6, 12, "Languages", "A supportive language Club that develops confidence and practical communication."],
+  ["Wed", 1630, "16:30–17:30", "Mid", "DnD Club", 3, 6, "Games & social", "Collaborative fantasy storytelling develops communication, creativity and problem-solving.", "Starts 16:30"],
+  ["Wed", 1715, "17:15–18:15", "Late", "Watercolour Explorers Club", 1, 2, "Art & making", "Children explore colour mixing, texture, composition and observation through painting."],
+  ["Wed", 1715, "17:15–18:15", "Late", "Manga & Comics", 2, 6, "Art & making", "Drawing, inking, storyboarding and character design support original sequential art."],
+
+  // ---------- THURSDAY ----------
+  ["Thu", 800, "08:00–08:45", "Morning", "Double Deutsch · Level 2", 2, 6, "Languages", "German language support before school.", "Also Tue"],
+  ["Thu", 800, "08:00–08:45", "Morning", "Orchestra Brio", 4, 6, "Music", "A string orchestra enrichment opportunity with rehearsal and performance goals."],
+  ["Thu", 800, "08:00–08:45", "Morning", "Violin", 2, 2, "Music", "A voluntary violin enrichment opportunity supported by the Music Department."],
+  ["Thu", 0, "By arrangement", "Flexible", "Double Deutsch · Dyslexia edition", 2, 6, "Languages", "Individual German support.", "Mon or Thu · Ms Avguston contacts families"],
+  ["Thu", 1515, "15:15–16:15", "Early", "Woodworking", 1, 2, "Art & making", "Practical projects introduce tools, materials and safe making."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Clay Modelling and Ceramics", 1, 2, "Art & making", "Children explore materials, tools and techniques through their own clay and ceramic projects."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Mathematics Explorers", 2, 4, "STEM", "Playful investigations develop curiosity, pattern recognition and flexible mathematical thinking."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Hip Hop & Street Dance", 3, 4, "Dance", "Urban dance styles develop rhythm, coordination, expression and group performance."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Acrobatics", 3, 4, "Sport", "Structured movement develops strength, flexibility, balance and safe partner work."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Flauto Grande", 3, 4, "Music", "A recorder ensemble for children ready to develop beyond class repertoire."],
+  ["Thu", 1515, "15:15–16:15", "Early", "KanJam Club", 3, 4, "Sport", "A flying-disc team game that develops accuracy, coordination and cooperation."],
+  ["Thu", 1515, "15:15–16:15", "Early", "Spanish", 3, 5, "Languages", "An introduction to Spanish through games, songs, conversation and cultural activities."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Latin Fusion", 3, 5, "Dance", "Latin-inspired dance develops rhythm, coordination and expressive movement."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Ukulele", 3, 6, "Music", "Children learn chords, strumming patterns and accessible ensemble playing."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Clay Modelling and Ceramics", 3, 6, "Art & making", "Children explore materials, tools and techniques through their own clay and ceramic projects."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Cooking", 4, 6, "Art & making", "Children discover ingredients and food traditions while learning safe, cooperative cooking and baking."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Flag Football", 4, 6, "Sport", "A fast, non-contact team sport developing tactics, cooperation and fair play."],
+  ["Thu", 1615, "16:15–17:15", "Mid", "Maths Quizzes and Mathematical Thinking", 5, 7, "STEM", "Puzzles and quizzes strengthen reasoning, strategy and flexible mathematical thinking."],
+  ["Thu", 1715, "17:15–18:15", "Late", "Clay Modelling and Ceramics", 5, 12, "Art & making", "Children explore materials, tools and techniques through their own clay and ceramic projects."],
+
+  // ---------- FRIDAY ----------
+  ["Fri", 800, "08:00–08:45", "Morning", "Double Deutsch · Beginner", 2, 6, "Languages", "German language support before school.", "Also Mon & Wed"],
+  ["Fri", 800, "08:00–08:45", "Morning", "Violin", 1, 2, "Music", "A voluntary violin enrichment opportunity supported by the Music Department."],
+  ["Fri", 800, "08:00–08:45", "Morning", "Tap Dance", 6, 7, "Dance", "Rhythmic footwork develops balance, coordination and musicality."],
+  ["Fri", 1515, "15:15–16:15", "Early", "Latin Fusion", 1, 2, "Dance", "Latin-inspired dance develops rhythm, coordination and expressive movement."],
+  ["Fri", 1515, "15:15–16:15", "Early", "Chinese – Mandarin Club", 1, 2, "Languages", "Mandarin through songs, movement, games and cultural exploration."],
+  ["Fri", 1515, "15:15–16:15", "Early", "Student Council Club", 1, 5, "Games & social", "Elected representatives learn to listen, discuss and strengthen school life together.", "Elected members only"],
+  ["Fri", 1515, "15:15–16:15", "Early", "Skating Club", 2, 5, "Sport", "Roller skating, inline skating and skateboarding develop balance and confidence.", "Own skates, helmet & pads"],
+  ["Fri", 1515, "15:15–16:15", "Early", "Digital Art Club", 3, 5, "Art & making", "Creative experimentation with digital drawing, painting, graphics and animation."],
+  ["Fri", 1515, "15:15–16:15", "Early", "Ballet", 4, 5, "Dance", "Classical dance develops technique, posture, musicality and confident performance."],
+  ["Fri", 1615, "16:15–17:15", "Mid", "Soccer Club", 3, 6, "Sport", "Training and games develop technique, fitness, teamwork and fair play."],
+  ["Fri", 1615, "16:15–17:15", "Mid", "Skating 2", 4, 8, "Sport", "Progressive skating challenges extend balance and control.", "Own skates, helmet & pads"],
+  ["Fri", 1615, "16:15–17:15", "Mid", "Card Game Club", 4, 6, "Games & social", "A friendly strategy Club in which cards are played, not traded, loaned or sold."],
+  ["Fri", 1615, "16:15–17:15", "Mid", "Mandarin Chinese", 5, 8, "Languages", "Mandarin through songs, movement, games and cultural exploration."],
+  ["Fri", 1615, "16:15–17:15", "Mid", "Digital Art Club", 6, 8, "Art & making", "Creative experimentation with digital drawing, painting, graphics and animation."],
+  ["Fri", 1715, "17:15–18:15", "Late", "Latin Fusion", 6, 10, "Dance", "Latin-inspired dance develops rhythm, coordination and expressive movement."],
+].map((r, i) => ({
+  id: i,
+  day: r[0], sort: r[1], time: r[2], band: r[3],
+  name: r[4], gLow: r[5], gHigh: r[6], cat: r[7], desc: r[8], note: r[9] || null,
+}));
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const DAY_FULL = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday" };
+const BANDS = ["Morning", "Early", "Mid", "Late"];
+const BAND_LABEL = { Morning: "08:00", Early: "15:15", Mid: "16:15", Late: "17:15" };
+const CATS = ["Dance", "Music", "Sport", "Art & making", "Languages", "STEM", "Games & social"];
+
+function ClubFinder() {
+  const [grade, setGrade] = useState(4);
+  const [day, setDay] = useState("All");
+  const [band, setBand] = useState("All");
+  const [cat, setCat] = useState("All");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(null);
+
+  const gradeMatched = useMemo(
+    () => (grade === "All" ? CLUBS : CLUBS.filter((c) => grade >= c.gLow && grade <= c.gHigh)),
+    [grade]
+  );
+
+  const rows = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return gradeMatched
+      .filter((c) => day === "All" || c.day === day)
+      .filter((c) => band === "All" || c.band === band)
+      .filter((c) => cat === "All" || c.cat === cat)
+      .filter((c) => !t || c.name.toLowerCase().includes(t) || c.desc.toLowerCase().includes(t))
+      .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.sort - b.sort || a.name.localeCompare(b.name));
+  }, [gradeMatched, day, band, cat, q]);
+
+  const grouped = DAYS.map((d) => ({ day: d, items: rows.filter((r) => r.day === d) })).filter((g) => g.items.length);
+
+  const heat = (d, b) => gradeMatched.filter((c) => c.day === d && c.band === b).length;
+  const reset = () => { setDay("All"); setBand("All"); setCat("All"); setQ(""); };
+  const filtersOn = day !== "All" || band !== "All" || cat !== "All" || q !== "";
+
+  const chip = (active, color) => ({
+    padding: "5px 11px",
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: active ? 700 : 500,
+    cursor: "pointer",
+    border: `1px solid ${active ? (color || C.ink) : C.line}`,
+    background: active ? (color || C.ink) : "transparent",
+    color: active ? "#fff" : C.soft,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+    transition: "all .15s ease",
+  });
+
+  const label = { fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: C.soft, fontWeight: 700, marginBottom: 7 };
+
+  return (
+    <div style={{ background: C.paper, color: C.ink, minHeight: "100%", fontFamily: "'Karla', ui-sans-serif, system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+        * { box-sizing: border-box; }
+        .disp { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
+        .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+        .row:hover { background: #F6F8F5; }
+        button:focus-visible { outline: 2px solid ${C.pine}; outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      `}</style>
+
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 18px 60px" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <span className="mono" style={{ fontSize: 11, letterSpacing: ".18em", color: C.pine, fontWeight: 600 }}>BCS PRIMARY · CITY CAMPUS</span>
+          <span className="mono" style={{ fontSize: 11, letterSpacing: ".18em", color: C.soft }}>2026–27</span>
+        </div>
+        <h1 className="disp" style={{ fontSize: "clamp(30px,6vw,50px)", lineHeight: 1.02, margin: "8px 0 6px", fontWeight: 800, letterSpacing: "-.02em" }}>
+          Club finder
+        </h1>
+        <p style={{ margin: "0 0 22px", color: C.soft, fontSize: 15, maxWidth: 560 }}>
+          Every club from the handbook and schedule, filtered by the grade your child is in.
+        </p>
+
+        {/* Grade selector */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={label}>Grade</div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {[1, 2, 3, 4, 5, 6, "All"].map((g) => (
+              <button key={g} onClick={() => setGrade(g)} style={{
+                ...chip(grade === g, C.pine),
+                minWidth: g === "All" ? 52 : 42, padding: "8px 12px", fontSize: 15,
+              }}>{g}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Week grid — signature element, doubles as day/time filter */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: "14px 14px 10px", marginBottom: 18 }}>
+          <div style={{ ...label, marginBottom: 10 }}>
+            Week at a glance {grade !== "All" && <span style={{ color: C.pine }}>· grade {grade}</span>} — tap a slot to filter
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "52px repeat(5, 1fr)", gap: 5 }}>
+            <div />
+            {DAYS.map((d) => (
+              <div key={d} className="mono" style={{ fontSize: 11, textAlign: "center", color: C.soft, fontWeight: 600, paddingBottom: 3 }}>{d}</div>
+            ))}
+            {BANDS.map((b) => (
+              <React.Fragment key={b}>
+                <div className="mono" style={{ fontSize: 10.5, color: C.soft, display: "flex", alignItems: "center" }}>{BAND_LABEL[b]}</div>
+                {DAYS.map((d) => {
+                  const n = heat(d, b);
+                  const sel = day === d && band === b;
+                  const alpha = n === 0 ? 0 : Math.min(0.14 + n * 0.13, 0.9);
+                  return (
+                    <button
+                      key={d + b}
+                      disabled={!n}
+                      onClick={() => (sel ? (setDay("All"), setBand("All")) : (setDay(d), setBand(b)))}
+                      title={`${DAY_FULL[d]} ${BAND_LABEL[b]} — ${n} club${n === 1 ? "" : "s"}`}
+                      style={{
+                        height: 34, borderRadius: 7, cursor: n ? "pointer" : "default",
+                        border: sel ? `2px solid ${C.ink}` : "1px solid transparent",
+                        background: n ? `rgba(31,111,92,${alpha})` : "#F1F3F0",
+                        color: alpha > 0.5 ? "#fff" : C.ink, fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 12.5, fontWeight: 600, transition: "all .15s ease",
+                      }}
+                    >{n || ""}</button>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 18, marginBottom: 14 }}>
+          <div style={{ flex: "1 1 240px" }}>
+            <div style={label}>Search</div>
+            <input
+              value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. cooking, robotics, dance"
+              style={{
+                width: "100%", padding: "9px 12px", borderRadius: 9, border: `1px solid ${C.line}`,
+                background: C.card, fontSize: 14, color: C.ink, fontFamily: "inherit",
+              }}
+            />
+          </div>
+          <div style={{ flex: "2 1 340px" }}>
+            <div style={label}>Type of club</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button onClick={() => setCat("All")} style={chip(cat === "All")}>All</button>
+              {CATS.map((k) => (
+                <button key={k} onClick={() => setCat(cat === k ? "All" : k)} style={chip(cat === k, CAT_COLOR[k])}>{k}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Result bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+          <span className="mono" style={{ fontSize: 12, color: C.soft }}>
+            {rows.length} club{rows.length === 1 ? "" : "s"}
+            {day !== "All" && ` · ${DAY_FULL[day]}`}
+            {band !== "All" && ` · ${BAND_LABEL[band]}`}
+          </span>
+          {filtersOn && (
+            <button onClick={reset} style={{ ...chip(false), fontSize: 12, padding: "3px 10px" }}>Clear filters</button>
+          )}
+        </div>
+
+        {/* Table */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden" }}>
+          {grouped.length === 0 && (
+            <div style={{ padding: "38px 20px", textAlign: "center" }}>
+              <p className="disp" style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>No clubs match these filters.</p>
+              <p style={{ margin: "6px 0 14px", color: C.soft, fontSize: 14 }}>Widen the search or clear the filters to see the full grade {grade} list.</p>
+              <button onClick={reset} style={{ ...chip(true, C.pine), padding: "8px 16px", fontSize: 14 }}>Clear filters</button>
+            </div>
+          )}
+
+          {grouped.map((g) => (
+            <div key={g.day}>
+              <div style={{
+                display: "flex", alignItems: "baseline", gap: 8,
+                padding: "10px 16px", background: "#F0F3EF", borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`,
+              }}>
+                <span className="disp" style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-.01em" }}>{DAY_FULL[g.day]}</span>
+                <span className="mono" style={{ fontSize: 11, color: C.soft }}>{g.items.length}</span>
+              </div>
+
+              {g.items.map((c) => {
+                const isOpen = open === c.id;
+                return (
+                  <div key={c.id} className="row" style={{ borderBottom: `1px solid #E8EDE7`, transition: "background .15s" }}>
+                    <button
+                      onClick={() => setOpen(isOpen ? null : c.id)}
+                      style={{
+                        width: "100%", display: "grid", gridTemplateColumns: "92px 1fr auto",
+                        gap: 12, alignItems: "center", padding: "11px 16px", background: "none",
+                        border: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: C.ink,
+                      }}
+                    >
+                      <span className="mono" style={{ fontSize: 12, color: C.soft, whiteSpace: "nowrap" }}>{c.time}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</span>
+                        <span style={{ display: "block", fontSize: 12, color: CAT_COLOR[c.cat], fontWeight: 600, marginTop: 2 }}>
+                          {c.cat}{c.note ? <span style={{ color: C.soft, fontWeight: 500 }}> · {c.note}</span> : null}
+                        </span>
+                      </span>
+                      <span className="mono" style={{
+                        fontSize: 11.5, color: C.soft, border: `1px solid ${C.line}`,
+                        borderRadius: 6, padding: "2px 7px", whiteSpace: "nowrap",
+                      }}>
+                        {c.gLow === c.gHigh ? `Gr ${c.gLow}` : `Gr ${c.gLow}–${c.gHigh}`}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <p style={{ margin: 0, padding: "0 16px 14px 108px", fontSize: 14, color: C.soft, lineHeight: 1.5 }}>{c.desc}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer notes */}
+        <div style={{ marginTop: 22, fontSize: 13, color: C.soft, lineHeight: 1.6 }}>
+          <p style={{ margin: "0 0 8px" }}>
+            <strong style={{ color: C.ink }}>Before you register:</strong> the official registration form is binding. First choices are prioritised where possible; if full, the second choice is considered automatically. Children stay in an allocated club until the October break before requesting a change, and more than three unexplained absences may cost the place.
+          </p>
+          <p style={{ margin: 0 }}>
+            BCS sports clothing is required for movement clubs. Skating needs own skates or board, helmet and full protective equipment.
+            Questions: clubs@cosmopolitanschool.de · Cooking: dicker@ · Dance: kreft@ · Music: kinneary@
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ClubFinder />);
+</script>
+</body>
+</html>
